@@ -1,0 +1,3419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light only">
+    <title>RaiseCheck - Find Out If You Deserve a Raise</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-light: #f0f4f8;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f8fafc;
+            --accent-primary: #0ea5e9;
+            --accent-primary-dark: #0284c7;
+            --accent-secondary: #8b5cf6;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --border-hover: #cbd5e1;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            color-scheme: light only;
+        }
+
+        body {
+            color-scheme: light only;
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-light);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(circle at 20% 50%, rgba(14, 165, 233, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+        }
+
+        /* Ambient floating gradient orbs for a lively, alive backdrop */
+        body::before, body::after {
+            content: '';
+            position: fixed;
+            width: 45vmax;
+            height: 45vmax;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.35;
+            pointer-events: none;
+        }
+        body::before {
+            top: -15vmax;
+            left: -10vmax;
+            background: radial-gradient(circle, rgba(14,165,233,0.5), transparent 70%);
+            animation: driftOne 22s ease-in-out infinite;
+        }
+        body::after {
+            bottom: -18vmax;
+            right: -10vmax;
+            background: radial-gradient(circle, rgba(139,92,246,0.45), transparent 70%);
+            animation: driftTwo 26s ease-in-out infinite;
+        }
+        @keyframes driftOne {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(8vmax, 6vmax) scale(1.15); }
+        }
+        @keyframes driftTwo {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-6vmax, -8vmax) scale(1.1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            body::before, body::after { animation: none; }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            animation: fadeInDown 0.6s ease-out;
+        }
+
+        .logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(120deg, var(--accent-primary), var(--accent-secondary), var(--accent-success), var(--accent-primary));
+            background-size: 300% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            animation: shimmerText 6s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes shimmerText {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 300% 50%; }
+        }
+
+        .tagline {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .tagline-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 0.6rem;
+            padding: 0.35rem 0.9rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--accent-success);
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.3px;
+        }
+
+        .tagline-badge .pulse-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent-success);
+            animation: pulseDot 1.6s ease-in-out infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+            50% { box-shadow: 0 0 0 5px rgba(16,185,129,0); }
+        }
+
+        /* Progress stepper */
+        .stepper {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 0.25rem;
+            margin-bottom: 2rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .step-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            position: relative;
+            cursor: default;
+        }
+
+        .step-item.clickable {
+            cursor: pointer;
+        }
+
+        .step-connector {
+            position: absolute;
+            top: 18px;
+            left: -50%;
+            width: 100%;
+            height: 2px;
+            background: var(--border);
+            z-index: 0;
+        }
+
+        .step-connector.filled {
+            background: var(--accent-primary);
+        }
+
+        .step-item:first-child .step-connector {
+            display: none;
+        }
+
+        .step-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            color: var(--text-muted);
+            z-index: 1;
+            transition: all 0.3s ease;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .step-item.active .step-circle {
+            border-color: var(--accent-primary);
+            background: var(--accent-primary);
+            color: white;
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
+        }
+
+        .step-item.completed .step-circle {
+            border-color: var(--accent-success);
+            background: var(--accent-success);
+            color: white;
+        }
+
+        .step-label {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .step-item.active .step-label {
+            color: var(--accent-primary);
+        }
+
+        .step-item.completed .step-label {
+            color: var(--accent-success);
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.4s ease-out;
+            animation-fill-mode: both;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 40px -12px rgba(14, 165, 233, 0.18);
+            border-color: rgba(14, 165, 233, 0.35);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-primary);
+        }
+
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 2px;
+        }
+
+        .card-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .required-dot {
+            color: var(--accent-danger);
+        }
+
+        .field-helper {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+            line-height: 1.4;
+        }
+
+        .field-error {
+            font-size: 0.85rem;
+            color: var(--accent-danger);
+            margin-top: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-weight: 500;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-light);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-container:hover {
+            border-color: var(--accent-primary);
+            background: var(--bg-card-hover);
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--accent-primary);
+        }
+
+        .checkbox-label {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            text-transform: none;
+            letter-spacing: normal;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            padding: 0.875rem;
+            background: var(--bg-light);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+        }
+
+        input.input-error,
+        select.input-error {
+            border-color: var(--accent-danger);
+        }
+
+        input.input-error:focus,
+        select.input-error:focus {
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+        }
+
+        .input-prefix-wrap {
+            position: relative;
+        }
+
+        .input-prefix {
+            position: absolute;
+            left: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-weight: 600;
+            pointer-events: none;
+        }
+
+        .input-prefix-wrap input {
+            padding-left: 1.75rem;
+        }
+
+        .input-suffix {
+            position: absolute;
+            right: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+
+        .input-prefix-wrap input[name="lastHikeMonths"] {
+            padding-left: 0.875rem;
+            padding-right: 4rem;
+        }
+
+        .btn-primary {
+            padding: 1rem 1.75rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            background-size: 200% auto;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: 'DM Sans', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px) scale(1.015);
+            box-shadow: 0 12px 24px rgba(14, 165, 233, 0.35);
+            background-position: right center;
+        }
+
+        .btn-primary:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            padding: 1rem 1.75rem;
+            background: var(--bg-card);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .btn-text-danger {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+            font-family: 'DM Sans', sans-serif;
+            padding: 0.5rem;
+            transition: color 0.2s ease;
+        }
+
+        .btn-text-danger:hover {
+            color: var(--accent-danger);
+        }
+
+        .wizard-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.5rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .wizard-nav-right {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        /* Skills */
+        .skills-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+            align-items: center;
+        }
+
+        .search-wrap {
+            position: relative;
+            flex: 1;
+            min-width: 220px;
+        }
+
+        .search-wrap input {
+            padding-left: 2.5rem;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .chip-btn {
+            padding: 0.6rem 1rem;
+            background: var(--bg-light);
+            border: 1.5px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .chip-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .skills-count-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.875rem 1.25rem;
+            background: rgba(14, 165, 233, 0.08);
+            border: 1px solid rgba(14, 165, 233, 0.25);
+            border-radius: 10px;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .skills-count-banner.good {
+            background: rgba(16, 185, 129, 0.08);
+            border-color: rgba(16, 185, 129, 0.25);
+        }
+
+        .skills-count-text {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .skill-category {
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .skill-category-header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.875rem 1rem;
+            background: var(--bg-light);
+            border: none;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            text-align: left;
+        }
+
+        .skill-category-title-row {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .skill-category-count {
+            background: var(--accent-primary);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.1rem 0.5rem;
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .skill-category-chevron {
+            color: var(--text-muted);
+            transition: transform 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .skill-category-chevron.open {
+            transform: rotate(180deg);
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.6rem;
+            padding: 1rem;
+        }
+
+        .skill-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 0.875rem;
+            background: var(--bg-card);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-transform: none;
+            letter-spacing: normal;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .skill-item:hover {
+            border-color: var(--accent-primary);
+            background: var(--bg-card-hover);
+        }
+
+        .skill-item.selected {
+            border-color: var(--accent-primary);
+            background: rgba(14, 165, 233, 0.08);
+        }
+
+        .skill-item input[type="checkbox"] {
+            cursor: pointer;
+            accent-color: var(--accent-primary);
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        .market-slider-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .market-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            appearance: none;
+            -webkit-appearance: none;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            outline: none;
+            cursor: pointer;
+            margin: 0.5rem 0;
+        }
+
+        .market-slider::-webkit-slider-thumb {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid var(--accent-primary);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        }
+
+        .market-slider::-moz-range-thumb {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid var(--accent-primary);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        }
+
+        .market-slider-scale {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            gap: 0.5rem;
+        }
+
+        .market-slider-scale span:nth-child(2) {
+            text-align: center;
+            flex: 1;
+        }
+
+        .estimate-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            margin-top: 0.75rem;
+        }
+
+        .estimate-text {
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .estimate-caveat {
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .market-help-short {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .market-help-link {
+            background: none;
+            border: none;
+            color: var(--accent-primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            padding: 0.4rem 0;
+            text-align: left;
+        }
+
+        .market-help-link:hover {
+            text-decoration: underline;
+        }
+
+        .market-help-panel {
+            background: rgba(14, 165, 233, 0.06);
+            border: 1px solid rgba(14, 165, 233, 0.25);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .market-help-title {
+            font-weight: 700;
+            margin-bottom: 0.85rem;
+            color: var(--text-primary);
+        }
+
+        .market-help-steps {
+            margin: 0 0 1rem 1.25rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+
+        .market-help-sources {
+            margin-bottom: 0.75rem;
+        }
+
+        .market-help-sources-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .market-help-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .market-source-chip {
+            padding: 0.4rem 0.85rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .market-help-note {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        /* Review step */
+        .review-section {
+            margin-bottom: 1.25rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .review-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .review-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .review-section-title {
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+
+        .review-edit-link {
+            background: none;
+            border: none;
+            color: var(--accent-primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .review-edit-link:hover {
+            text-decoration: underline;
+        }
+
+        .review-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .review-item-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+        }
+
+        .review-item-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .review-skills-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .review-skill-tag {
+            padding: 0.35rem 0.75rem;
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .empty-note {
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+
+        /* Tooltip */
+        .tooltip-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .tooltip-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--border);
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: help;
+            text-transform: none;
+            letter-spacing: normal;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .tooltip-text {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: 130%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-primary);
+            color: white;
+            text-align: left;
+            padding: 0.6rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: none;
+            letter-spacing: normal;
+            width: 220px;
+            line-height: 1.4;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            z-index: 10;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .tooltip-wrap:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.2s ease;
+            padding: 1rem;
+        }
+
+        .modal-card {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 16px;
+            max-width: 420px;
+            width: 100%;
+            animation: slideUp 0.25s ease;
+            text-align: center;
+        }
+
+        .modal-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-danger);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin: 0 auto 1rem;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-text {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .modal-actions button {
+            flex: 1;
+        }
+
+        .btn-danger {
+            padding: 0.875rem;
+            background: var(--accent-danger);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-primary);
+            color: white;
+            padding: 0.875rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            z-index: 1100;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            animation: slideUp 0.3s ease;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .plain-summary-card {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(139, 92, 246, 0.08));
+            border: 1.5px solid rgba(14, 165, 233, 0.3);
+        }
+
+        .plain-summary-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 0.6rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .plain-summary-text {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .status-card {
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .status-card.overpaid {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-card.fair {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(14, 165, 233, 0.05));
+            border: 1px solid rgba(14, 165, 233, 0.3);
+        }
+
+        .status-card.underpaid {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .status-badge.overpaid { background: var(--accent-success); color: white; }
+        .status-badge.fair { background: var(--accent-primary); color: white; }
+        .status-badge.underpaid { background: var(--accent-danger); color: white; }
+
+        .market-comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .comparison-item {
+            text-align: center;
+            padding: 1.5rem;
+            background: var(--bg-light);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .comparison-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .comparison-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .score-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .score-circle {
+            position: relative;
+            margin-bottom: 1.5rem;
+            animation: scorePopIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .score-circle svg circle:nth-child(2) {
+            filter: drop-shadow(0 0 6px currentColor);
+        }
+
+        @keyframes scorePopIn {
+            0% { transform: scale(0.6); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .score-number {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .score-status {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .score-description {
+            color: var(--text-secondary);
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .career-path {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        .career-step {
+            padding: 0.5rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            background: var(--bg-card-hover);
+        }
+
+        .career-step.past {
+            opacity: 0.6;
+        }
+
+        .career-step.current {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+
+        .career-step.next {
+            border-color: var(--accent-secondary);
+            color: var(--accent-secondary);
+            background: rgba(139, 92, 246, 0.08);
+        }
+
+        .career-skill-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .career-skill-chip {
+            padding: 0.35rem 0.75rem;
+            border-radius: 16px;
+            background: rgba(14, 165, 233, 0.1);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            color: var(--accent-primary-dark);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .score-explainer {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: var(--bg-light);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .score-explainer-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .score-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--bg-card);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .score-item-label { color: var(--text-secondary); }
+
+        .score-item-value {
+            font-weight: 700;
+            color: var(--accent-primary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .hike-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .hike-option {
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .hike-option:hover {
+            transform: translateY(-6px) scale(1.03);
+            box-shadow: 0 16px 28px rgba(0, 0, 0, 0.12);
+        }
+
+        .hike-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.75rem;
+        }
+
+        .hike-value {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 0.5rem;
+        }
+
+        .hike-amount { font-size: 1.1rem; color: var(--text-secondary); }
+
+        .alert {
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background: rgba(14, 165, 233, 0.1);
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+
+        .btn-share {
+            width: 100%;
+            padding: 1rem;
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'DM Sans', sans-serif;
+            margin-top: 1rem;
+        }
+
+        .btn-share:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            background: var(--bg-card-hover);
+        }
+
+        .progress-track {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.75rem;
+            overflow-x: auto;
+            padding: 0.5rem 0.25rem 0.75rem;
+        }
+
+        .progress-node {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 1rem 1.1rem;
+            background: var(--bg-light);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            min-width: 76px;
+            transition: all 0.25s ease;
+        }
+
+        .progress-node.latest {
+            border-color: var(--accent-primary);
+            background: rgba(14, 165, 233, 0.08);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        .progress-node-score {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: var(--text-primary);
+        }
+
+        .progress-node-date {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .progress-node-delta {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.1rem 0.4rem;
+            border-radius: 10px;
+        }
+
+        .progress-node-delta.up { color: var(--accent-danger); background: rgba(239, 68, 68, 0.1); }
+        .progress-node-delta.down { color: var(--accent-success); background: rgba(16, 185, 129, 0.1); }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 1rem;
+        }
+
+        .share-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+            padding: 1rem;
+        }
+
+        .share-card {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            animation: slideUp 0.3s ease;
+        }
+
+        .share-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .share-close:hover { background: var(--bg-light); color: var(--text-primary); }
+
+        .share-content {
+            background: var(--bg-light);
+            padding: 1.5rem;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            margin: 1rem 0;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .btn-copy {
+            width: 100%;
+            padding: 0.875rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-copy:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(14, 165, 233, 0.3);
+        }
+
+        .ask-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .ask-tab {
+            padding: 0.7rem 1.1rem;
+            background: var(--bg-light);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .ask-tab:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .ask-tab.active {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+
+        .ask-content {
+            animation: fadeInUp 0.25s ease;
+        }
+
+        .ask-call-list {
+            margin: 0 0 1.25rem 1.25rem;
+            color: var(--text-primary);
+            font-size: 0.92rem;
+            line-height: 1.9;
+        }
+
+        .ask-email-subject {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+            padding: 0.6rem 0.9rem;
+            background: var(--bg-light);
+            border-radius: 8px;
+        }
+
+        .ask-template-box {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.25rem;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: var(--text-primary);
+            white-space: pre-wrap;
+            margin-bottom: 1rem;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .ask-whatsapp-box {
+            background: rgba(16, 185, 129, 0.06);
+            border-color: rgba(16, 185, 129, 0.25);
+        }
+
+        .btn-copy-small {
+            padding: 0.7rem 1.2rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .btn-copy-small:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(14, 165, 233, 0.3);
+        }
+
+        .btn-back {
+            padding: 0.75rem 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'DM Sans', sans-serif;
+            margin-bottom: 2rem;
+        }
+
+        .btn-back:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+        .shake { animation: shake 0.3s ease; }
+
+        @media (max-width: 768px) {
+            .form-grid, .market-comparison, .hike-options { grid-template-columns: 1fr; }
+            .logo { font-size: 2rem; }
+            .card { padding: 1.25rem; }
+            .step-label { display: none; }
+            .container { padding: 1rem; }
+            .wizard-nav { flex-direction: column-reverse; align-items: stretch; }
+            .wizard-nav-right { flex-direction: column-reverse; }
+            .wizard-nav-right button { width: 100%; }
+        }
+
+        /* Focus visibility for accessibility */
+        button:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // Skills organized by category for easier browsing (90+ total)
+        const SKILL_CATEGORIES = {
+            'Programming Languages': [
+                'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'C#', 'Go (Golang)',
+                'Rust', 'Kotlin', 'Swift', 'Ruby', 'PHP', 'Scala', 'R Programming', 'Objective-C'
+            ],
+            'Frontend & Web': [
+                'HTML', 'CSS/SASS', 'React', 'Angular', 'Vue.js', 'Frontend Development',
+                'Web Development', 'UI/UX Design'
+            ],
+            'Backend & Architecture': [
+                'Backend Development', 'Full Stack Development', 'Node.js', 'Ruby on Rails',
+                '.NET', 'Microservices', 'System Design', 'Software Architecture',
+                'APIs (REST/GraphQL)', 'ERP Systems', 'SAP'
+            ],
+            'Mobile Development': [
+                'iOS Development', 'Android Development', 'Flutter', 'React Native', 'Mobile Development'
+            ],
+            'Data & AI': [
+                'Data Analysis', 'Data Science', 'Data Engineering', 'Data Visualization',
+                'Machine Learning', 'Deep Learning', 'AI/ML', 'Natural Language Processing',
+                'Computer Vision', 'MLOps', 'Statistical Modeling', 'A/B Testing',
+                'Pandas/NumPy', 'PyTorch', 'TensorFlow', 'Scikit-learn', 'Power BI', 'Tableau',
+                'Looker', 'Excel/Spreadsheets', 'Analytics', 'Google Analytics', 'Big Data (Spark/Hadoop)',
+                'ETL Pipelines', 'Data Warehousing'
+            ],
+            'Databases': [
+                'SQL', 'NoSQL Databases', 'MySQL', 'PostgreSQL', 'MongoDB', 'Database Design'
+            ],
+            'Cloud & DevOps': [
+                'AWS', 'Azure', 'Google Cloud', 'Docker', 'Kubernetes', 'CI/CD', 'DevOps',
+                'Cloud Architecture', 'Linux/Unix', 'Git/Version Control', 'Automation'
+            ],
+            'Security': [
+                'Cybersecurity', 'Security', 'Network Engineering'
+            ],
+            'Design & Creative': [
+                'Graphic Design', 'Video Editing', '3D Modeling', 'Unity', 'Unreal Engine'
+            ],
+            'Business & Management': [
+                'Product Management', 'Project Management', 'Agile/Scrum', 'Business Analysis',
+                'Leadership', 'Stakeholder Management', 'Financial Analysis', 'Customer Success'
+            ],
+            'Marketing & Content': [
+                'Digital Marketing', 'SEO/SEM', 'Social Media Marketing', 'Email Marketing',
+                'Content Strategy', 'Copywriting', 'Marketing Strategy', 'E-commerce'
+            ],
+            'Tools & Practices': [
+                'Jira', 'Salesforce', 'Testing/QA', 'Quality Assurance',
+                'Performance Optimization', 'Technical Writing', 'Communication', 'Blockchain'
+            ]
+        };
+
+        const ALL_SKILLS = Object.values(SKILL_CATEGORIES).flat();
+
+        // Popular skill suggestions, chosen per role category so a CEO doesn't
+        // get "JavaScript" and a Frontend Developer doesn't get "Leadership".
+        // Keys match what suggestedCategory() in InputForm returns.
+        const POPULAR_SKILLS_BY_CATEGORY = {
+            'Data & AI': ['Python', 'SQL', 'Data Analysis', 'Machine Learning', 'Power BI', 'Data Visualization', 'Communication'],
+            'Design & Creative': ['UI/UX Design', 'Graphic Design', 'Communication', 'Video Editing', 'Product Management'],
+            'Marketing & Content': ['Digital Marketing', 'SEO/SEM', 'Content Strategy', 'Social Media Marketing', 'Analytics', 'Communication'],
+            'Security': ['Cybersecurity', 'Network Engineering', 'Security', 'Linux/Unix', 'Cloud Architecture'],
+            'Frontend & Web': ['JavaScript', 'React', 'HTML', 'CSS/SASS', 'TypeScript'],
+            'Backend & Architecture': ['Node.js', 'SQL', 'System Design', 'APIs (REST/GraphQL)', 'Python'],
+            'Mobile Development': ['iOS Development', 'Android Development', 'Flutter', 'React Native'],
+            'Cloud & DevOps': ['AWS', 'Docker', 'Kubernetes', 'CI/CD', 'Linux/Unix'],
+            'Business & Management': ['Leadership', 'Stakeholder Management', 'Communication', 'Project Management', 'Financial Analysis', 'Business Analysis'],
+            'Programming Languages': ['JavaScript', 'Python', 'SQL', 'Git/Version Control', 'Communication']
+        };
+
+        function getPopularSkillsFor(category) {
+            return POPULAR_SKILLS_BY_CATEGORY[category] || POPULAR_SKILLS_BY_CATEGORY['Programming Languages'];
+        }
+
+        const ROLE_GROUPS = {
+            'Data Science & Analytics': [
+                'Data Analyst', 'Senior Data Analyst', 'Business Intelligence (BI) Analyst', 'BI Developer',
+                'Data Scientist', 'Senior Data Scientist', 'Lead Data Scientist', 'Principal Data Scientist',
+                'Machine Learning Engineer', 'Senior ML Engineer', 'MLOps Engineer', 'AI Engineer',
+                'AI Research Scientist', 'Data Engineer', 'Senior Data Engineer', 'Analytics Engineer',
+                'Quantitative Analyst', 'Statistician', 'Data Architect', 'Head of Data / Analytics',
+                'Chief Data Officer'
+            ],
+            'Software & Engineering': [
+                'Software Engineer', 'Senior Software Engineer', 'Lead Software Engineer', 'Staff Engineer',
+                'Principal Engineer', 'Frontend Developer', 'Backend Developer', 'Full Stack Developer',
+                'Mobile Developer', 'DevOps Engineer', 'Site Reliability Engineer (SRE)', 'Cloud Engineer',
+                'Security Engineer', 'QA Engineer', 'QA Automation Engineer', 'Solution Architect',
+                'Engineering Manager', 'Senior Engineering Manager', 'Director of Engineering',
+                'VP of Engineering', 'CTO'
+            ],
+            'Product & Design': [
+                'Product Manager', 'Senior Product Manager', 'Product Lead', 'Director of Product',
+                'VP of Product', 'UX Designer', 'UI Designer', 'Product Designer', 'UX Researcher', 'Designer'
+            ],
+            'Marketing & Growth': [
+                'Marketing Manager', 'Digital Marketing Specialist', 'Growth Marketing Manager',
+                'SEO Specialist', 'Content Marketing Manager', 'Social Media Manager', 'Brand Manager', 'CMO'
+            ],
+            'Sales & Business': [
+                'Sales Engineer', 'Account Executive', 'Business Development Manager', 'Sales Manager', 'VP of Sales'
+            ],
+            'Operations & Finance': [
+                'Operations Manager', 'Business Analyst', 'Financial Analyst', 'Accountant',
+                'Investment Analyst', 'CFO'
+            ],
+            'HR & People': [
+                'HR Manager', 'Recruiter', 'People Operations Manager', 'Talent Acquisition Specialist'
+            ],
+            'Customer & Support': [
+                'Customer Success Manager', 'Support Engineer', 'Technical Support Specialist'
+            ],
+            'Leadership & Executive': [
+                'CEO', 'COO', 'General Manager', 'Founder'
+            ],
+            'Other': ['Other (specify below)']
+        };
+
+        // Reverse lookup: exact role name -> its group in ROLE_GROUPS.
+        const ROLE_TO_GROUP = {};
+        Object.entries(ROLE_GROUPS).forEach(([group, roles]) => {
+            roles.forEach(role => { ROLE_TO_GROUP[role] = group; });
+        });
+
+        // Popular skills tailored per exact role (not just a broad category),
+        // so a Recruiter and a CFO - both previously lumped into generic
+        // "Business & Management" - now get genuinely different suggestions.
+        // Falls back to a per-group default for any role not listed explicitly.
+        const ROLE_SPECIFIC_SKILLS = {
+            'Data Analyst': ['SQL', 'Excel/Spreadsheets', 'Data Analysis', 'Data Visualization', 'Power BI', 'Communication'],
+            'Senior Data Analyst': ['SQL', 'Data Analysis', 'Power BI', 'Tableau', 'Stakeholder Management', 'A/B Testing'],
+            'Business Intelligence (BI) Analyst': ['SQL', 'Power BI', 'Tableau', 'Data Visualization', 'Data Warehousing'],
+            'BI Developer': ['SQL', 'ETL Pipelines', 'Data Warehousing', 'Power BI', 'Database Design'],
+            'Data Scientist': ['Python', 'Machine Learning', 'Statistical Modeling', 'SQL', 'Pandas/NumPy', 'A/B Testing'],
+            'Senior Data Scientist': ['Python', 'Machine Learning', 'Deep Learning', 'Statistical Modeling', 'Stakeholder Management'],
+            'Lead Data Scientist': ['Machine Learning', 'Leadership', 'System Design', 'Stakeholder Management', 'MLOps'],
+            'Principal Data Scientist': ['Machine Learning', 'Leadership', 'System Design', 'AI/ML', 'Stakeholder Management'],
+            'Machine Learning Engineer': ['Python', 'Machine Learning', 'PyTorch', 'TensorFlow', 'MLOps', 'Cloud Architecture'],
+            'Senior ML Engineer': ['Machine Learning', 'MLOps', 'System Design', 'Deep Learning', 'Leadership'],
+            'MLOps Engineer': ['MLOps', 'Docker', 'Kubernetes', 'CI/CD', 'Machine Learning', 'Cloud Architecture'],
+            'AI Engineer': ['Python', 'AI/ML', 'Machine Learning', 'Natural Language Processing', 'APIs (REST/GraphQL)'],
+            'AI Research Scientist': ['Deep Learning', 'Machine Learning', 'Natural Language Processing', 'Computer Vision'],
+            'Data Engineer': ['SQL', 'ETL Pipelines', 'Big Data (Spark/Hadoop)', 'Data Warehousing', 'Python'],
+            'Senior Data Engineer': ['ETL Pipelines', 'Big Data (Spark/Hadoop)', 'System Design', 'Cloud Architecture', 'Leadership'],
+            'Analytics Engineer': ['SQL', 'ETL Pipelines', 'Data Warehousing', 'Data Visualization'],
+            'Quantitative Analyst': ['Statistical Modeling', 'Python', 'R Programming', 'Data Analysis'],
+            'Statistician': ['Statistical Modeling', 'R Programming', 'Data Analysis', 'A/B Testing'],
+            'Data Architect': ['Database Design', 'System Design', 'Cloud Architecture', 'Data Warehousing', 'Leadership'],
+            'Head of Data / Analytics': ['Leadership', 'Stakeholder Management', 'Data Science', 'System Design'],
+            'Chief Data Officer': ['Leadership', 'Stakeholder Management', 'Data Science', 'Financial Analysis'],
+
+            'Software Engineer': ['JavaScript', 'Python', 'Git/Version Control', 'APIs (REST/GraphQL)', 'SQL'],
+            'Senior Software Engineer': ['System Design', 'JavaScript', 'APIs (REST/GraphQL)', 'CI/CD', 'Leadership'],
+            'Lead Software Engineer': ['System Design', 'Leadership', 'Software Architecture', 'Stakeholder Management'],
+            'Staff Engineer': ['System Design', 'Software Architecture', 'Leadership', 'Technical Writing'],
+            'Principal Engineer': ['Software Architecture', 'System Design', 'Leadership', 'Stakeholder Management'],
+            'Frontend Developer': ['JavaScript', 'React', 'HTML', 'CSS/SASS', 'TypeScript'],
+            'Backend Developer': ['Node.js', 'SQL', 'APIs (REST/GraphQL)', 'System Design', 'Python'],
+            'Full Stack Developer': ['JavaScript', 'React', 'Node.js', 'SQL', 'APIs (REST/GraphQL)'],
+            'Mobile Developer': ['iOS Development', 'Android Development', 'Flutter', 'React Native'],
+            'DevOps Engineer': ['AWS', 'Docker', 'Kubernetes', 'CI/CD', 'Automation'],
+            'Site Reliability Engineer (SRE)': ['Kubernetes', 'CI/CD', 'Linux/Unix', 'Cloud Architecture', 'Automation'],
+            'Cloud Engineer': ['AWS', 'Azure', 'Google Cloud', 'Cloud Architecture', 'Docker'],
+            'Security Engineer': ['Cybersecurity', 'Security', 'Network Engineering', 'Cloud Architecture'],
+            'QA Engineer': ['Testing/QA', 'Quality Assurance', 'Automation', 'Communication'],
+            'QA Automation Engineer': ['Testing/QA', 'Automation', 'CI/CD', 'Git/Version Control'],
+            'Solution Architect': ['System Design', 'Software Architecture', 'Cloud Architecture', 'Stakeholder Management'],
+            'Engineering Manager': ['Leadership', 'Stakeholder Management', 'Project Management', 'System Design'],
+            'Senior Engineering Manager': ['Leadership', 'Stakeholder Management', 'Project Management', 'Financial Analysis'],
+            'Director of Engineering': ['Leadership', 'Stakeholder Management', 'Financial Analysis', 'Software Architecture'],
+            'VP of Engineering': ['Leadership', 'Stakeholder Management', 'Financial Analysis', 'Software Architecture'],
+            'CTO': ['Leadership', 'Software Architecture', 'Stakeholder Management', 'Financial Analysis'],
+
+            'Product Manager': ['Product Management', 'Stakeholder Management', 'Agile/Scrum', 'Communication', 'Analytics'],
+            'Senior Product Manager': ['Product Management', 'Stakeholder Management', 'Leadership', 'Analytics'],
+            'Product Lead': ['Product Management', 'Leadership', 'Stakeholder Management', 'Financial Analysis'],
+            'Director of Product': ['Leadership', 'Product Management', 'Stakeholder Management', 'Financial Analysis'],
+            'VP of Product': ['Leadership', 'Product Management', 'Stakeholder Management', 'Financial Analysis'],
+            'UX Designer': ['UI/UX Design', 'Communication', 'Graphic Design'],
+            'UI Designer': ['UI/UX Design', 'Graphic Design', 'Communication'],
+            'Product Designer': ['UI/UX Design', 'Product Management', 'Communication'],
+            'UX Researcher': ['UI/UX Design', 'Analytics', 'Communication'],
+            'Designer': ['Graphic Design', 'UI/UX Design', 'Communication'],
+
+            'Marketing Manager': ['Digital Marketing', 'Marketing Strategy', 'Analytics', 'Communication'],
+            'Digital Marketing Specialist': ['Digital Marketing', 'SEO/SEM', 'Social Media Marketing', 'Analytics'],
+            'Growth Marketing Manager': ['Digital Marketing', 'Analytics', 'A/B Testing', 'Marketing Strategy'],
+            'SEO Specialist': ['SEO/SEM', 'Content Strategy', 'Analytics', 'Google Analytics'],
+            'Content Marketing Manager': ['Content Strategy', 'Copywriting', 'SEO/SEM', 'Communication'],
+            'Social Media Manager': ['Social Media Marketing', 'Content Strategy', 'Communication', 'Analytics'],
+            'Brand Manager': ['Marketing Strategy', 'Communication', 'Content Strategy'],
+            'CMO': ['Leadership', 'Marketing Strategy', 'Stakeholder Management', 'Financial Analysis'],
+
+            'Sales Engineer': ['Communication', 'System Design', 'Customer Success'],
+            'Account Executive': ['Communication', 'Customer Success', 'Stakeholder Management'],
+            'Business Development Manager': ['Communication', 'Stakeholder Management', 'Marketing Strategy'],
+            'Sales Manager': ['Leadership', 'Communication', 'Stakeholder Management'],
+            'VP of Sales': ['Leadership', 'Stakeholder Management', 'Financial Analysis'],
+
+            'Operations Manager': ['Project Management', 'Leadership', 'Business Analysis', 'Communication'],
+            'Business Analyst': ['Business Analysis', 'Data Analysis', 'Excel/Spreadsheets', 'Communication'],
+            'Financial Analyst': ['Financial Analysis', 'Excel/Spreadsheets', 'Data Analysis'],
+            'Accountant': ['Financial Analysis', 'Excel/Spreadsheets', 'Communication'],
+            'Investment Analyst': ['Financial Analysis', 'Data Analysis', 'Excel/Spreadsheets'],
+            'CFO': ['Leadership', 'Financial Analysis', 'Stakeholder Management'],
+
+            'HR Manager': ['Communication', 'Stakeholder Management', 'Leadership'],
+            'Recruiter': ['Communication', 'Stakeholder Management'],
+            'People Operations Manager': ['Communication', 'Project Management', 'Stakeholder Management'],
+            'Talent Acquisition Specialist': ['Communication', 'Stakeholder Management'],
+
+            'Customer Success Manager': ['Customer Success', 'Communication', 'Stakeholder Management'],
+            'Support Engineer': ['Testing/QA', 'Communication', 'Technical Writing'],
+            'Technical Support Specialist': ['Communication', 'Technical Writing'],
+
+            'CEO': ['Leadership', 'Stakeholder Management', 'Financial Analysis', 'Communication'],
+            'COO': ['Leadership', 'Stakeholder Management', 'Financial Analysis', 'Project Management'],
+            'General Manager': ['Leadership', 'Stakeholder Management', 'Financial Analysis'],
+            'Founder': ['Leadership', 'Stakeholder Management', 'Financial Analysis', 'Communication']
+        };
+
+        // Per-group fallback (used for custom/"Other" roles, matched by keyword).
+        const GROUP_POPULAR_SKILLS = {
+            'Data Science & Analytics': ['Python', 'SQL', 'Data Analysis', 'Machine Learning', 'Power BI', 'Communication'],
+            'Software & Engineering': ['JavaScript', 'Python', 'System Design', 'Git/Version Control', 'APIs (REST/GraphQL)'],
+            'Product & Design': ['Product Management', 'UI/UX Design', 'Stakeholder Management', 'Communication'],
+            'Marketing & Growth': ['Digital Marketing', 'SEO/SEM', 'Content Strategy', 'Analytics'],
+            'Sales & Business': ['Communication', 'Stakeholder Management', 'Customer Success'],
+            'Operations & Finance': ['Financial Analysis', 'Business Analysis', 'Excel/Spreadsheets', 'Communication'],
+            'HR & People': ['Communication', 'Stakeholder Management', 'Leadership'],
+            'Customer & Support': ['Customer Success', 'Communication', 'Technical Writing'],
+            'Leadership & Executive': ['Leadership', 'Stakeholder Management', 'Financial Analysis', 'Communication'],
+            'Other': ['Communication', 'Project Management', 'Leadership']
+        };
+
+        function getRoleSpecificSkills(role, group) {
+            return ROLE_SPECIFIC_SKILLS[role] || GROUP_POPULAR_SKILLS[group] || GROUP_POPULAR_SKILLS['Other'];
+        }
+
+        // Career map: for a role inside ROLE_GROUPS, show the next 1-2 steps
+        // on that same track (the arrays are ordered roughly junior -> senior).
+        function getCareerPath(role) {
+            const group = ROLE_TO_GROUP[role];
+            if (!group || group === 'Other') return null;
+            const track = ROLE_GROUPS[group];
+            const idx = track.indexOf(role);
+            if (idx === -1) return null;
+            const next = track.slice(idx + 1, idx + 3);
+            return {
+                group,
+                track,
+                currentIndex: idx,
+                next,
+                isTopOfTrack: next.length === 0
+            };
+        }
+
+        // Rough relative pay multipliers used only for the optional ballpark
+        // estimate feature - NOT precise market data, just a starting point.
+        const ROLE_MULTIPLIERS = {
+            'Data Analyst': 0.75, 'Senior Data Analyst': 0.95, 'Business Intelligence (BI) Analyst': 0.8,
+            'BI Developer': 0.85, 'Data Scientist': 1.05, 'Senior Data Scientist': 1.35,
+            'Lead Data Scientist': 1.6, 'Principal Data Scientist': 1.9, 'Machine Learning Engineer': 1.15,
+            'Senior ML Engineer': 1.45, 'MLOps Engineer': 1.2, 'AI Engineer': 1.2,
+            'AI Research Scientist': 1.55, 'Data Engineer': 1.05, 'Senior Data Engineer': 1.35,
+            'Analytics Engineer': 1.0, 'Quantitative Analyst': 1.3, 'Statistician': 0.9,
+            'Data Architect': 1.5, 'Head of Data / Analytics': 2.1, 'Chief Data Officer': 3.0,
+            'Software Engineer': 1.0, 'Senior Software Engineer': 1.3, 'Lead Software Engineer': 1.55,
+            'Staff Engineer': 1.7, 'Principal Engineer': 2.0, 'Frontend Developer': 0.9,
+            'Backend Developer': 0.95, 'Full Stack Developer': 1.0, 'Mobile Developer': 0.95,
+            'DevOps Engineer': 1.1, 'Site Reliability Engineer (SRE)': 1.2, 'Cloud Engineer': 1.1,
+            'Security Engineer': 1.2, 'QA Engineer': 0.75, 'QA Automation Engineer': 0.85,
+            'Solution Architect': 1.6, 'Engineering Manager': 1.7, 'Senior Engineering Manager': 2.0,
+            'Director of Engineering': 2.6, 'VP of Engineering': 3.2, 'CTO': 3.8,
+            'Product Manager': 1.2, 'Senior Product Manager': 1.5, 'Product Lead': 1.7,
+            'Director of Product': 2.4, 'VP of Product': 3.0, 'UX Designer': 0.9, 'UI Designer': 0.9,
+            'Product Designer': 1.0, 'UX Researcher': 0.95, 'Designer': 0.8,
+            'Marketing Manager': 1.0, 'Digital Marketing Specialist': 0.7, 'Growth Marketing Manager': 1.05,
+            'SEO Specialist': 0.65, 'Content Marketing Manager': 0.8, 'Social Media Manager': 0.65,
+            'Brand Manager': 0.95, 'CMO': 3.0,
+            'Sales Engineer': 1.05, 'Account Executive': 0.9, 'Business Development Manager': 1.0,
+            'Sales Manager': 1.2, 'VP of Sales': 3.0,
+            'Operations Manager': 1.0, 'Business Analyst': 0.85, 'Financial Analyst': 0.85,
+            'Accountant': 0.65, 'Investment Analyst': 1.1, 'CFO': 3.5,
+            'HR Manager': 0.9, 'Recruiter': 0.65, 'People Operations Manager': 0.9,
+            'Talent Acquisition Specialist': 0.7,
+            'Customer Success Manager': 0.85, 'Support Engineer': 0.75, 'Technical Support Specialist': 0.65,
+            'CEO': 4.0, 'COO': 3.5, 'General Manager': 2.0, 'Founder': 2.0,
+            'Other (specify below)': 1.0
+        };
+
+        const REGIONS = [
+            'North America - United States', 'North America - Canada', 'Europe - UK',
+            'Europe - Germany', 'Europe - France', 'Europe - Netherlands', 'Europe - Other',
+            'Asia - India', 'Asia - Singapore', 'Asia - Japan', 'Asia - Other',
+            'Australia/New Zealand', 'South America', 'Middle East', 'Africa'
+        ];
+
+        // Currency definitions - amounts are never converted between currencies,
+        // only labeled and formatted correctly for the user's own region.
+        const CURRENCIES = {
+            USD: { symbol: '$', label: 'US Dollar (USD)', locale: 'en-US', code: 'USD' },
+            CAD: { symbol: 'C$', label: 'Canadian Dollar (CAD)', locale: 'en-CA', code: 'CAD' },
+            GBP: { symbol: '£', label: 'British Pound (GBP)', locale: 'en-GB', code: 'GBP' },
+            EUR: { symbol: '€', label: 'Euro (EUR)', locale: 'de-DE', code: 'EUR' },
+            INR: { symbol: '₹', label: 'Indian Rupee (INR)', locale: 'en-IN', code: 'INR' },
+            SGD: { symbol: 'S$', label: 'Singapore Dollar (SGD)', locale: 'en-SG', code: 'SGD' },
+            JPY: { symbol: '¥', label: 'Japanese Yen (JPY)', locale: 'ja-JP', code: 'JPY' },
+            AUD: { symbol: 'A$', label: 'Australian Dollar (AUD)', locale: 'en-AU', code: 'AUD' },
+            AED: { symbol: 'AED', label: 'UAE Dirham (AED)', locale: 'ar-AE', code: 'AED' },
+            ZAR: { symbol: 'R', label: 'South African Rand (ZAR)', locale: 'en-ZA', code: 'ZAR' },
+            BRL: { symbol: 'R$', label: 'Brazilian Real (BRL)', locale: 'pt-BR', code: 'BRL' },
+            OTHER: { symbol: '', label: 'Other (I\'ll use my own currency)', locale: 'en-US', code: null }
+        };
+
+        const REGION_TO_CURRENCY = {
+            'North America - United States': 'USD',
+            'North America - Canada': 'CAD',
+            'Europe - UK': 'GBP',
+            'Europe - Germany': 'EUR',
+            'Europe - France': 'EUR',
+            'Europe - Netherlands': 'EUR',
+            'Europe - Other': 'EUR',
+            'Asia - India': 'INR',
+            'Asia - Singapore': 'SGD',
+            'Asia - Japan': 'JPY',
+            'Asia - Other': 'OTHER',
+            'Australia/New Zealand': 'AUD',
+            'South America': 'BRL',
+            'Middle East': 'AED',
+            'Africa': 'ZAR'
+        };
+
+        // Region-aware suggestions for where to research market salary data.
+        // Names only (not links) since these are well-known, commonly used sources.
+        const MARKET_RESOURCES = {
+            'North America - United States': ['Levels.fyi', 'Glassdoor', 'Payscale', 'LinkedIn Salary'],
+            'North America - Canada': ['Glassdoor', 'Payscale', 'LinkedIn Salary'],
+            'Europe - UK': ['Glassdoor', 'Payscale', 'LinkedIn Salary', 'Indeed Salaries'],
+            'Europe - Germany': ['Glassdoor', 'Kununu', 'LinkedIn Salary'],
+            'Europe - France': ['Glassdoor', 'LinkedIn Salary'],
+            'Europe - Netherlands': ['Glassdoor', 'LinkedIn Salary'],
+            'Europe - Other': ['Glassdoor', 'LinkedIn Salary', 'Payscale'],
+            'Asia - India': ['AmbitionBox', 'Glassdoor', 'Naukri', 'LinkedIn Salary'],
+            'Asia - Singapore': ['Glassdoor', 'LinkedIn Salary'],
+            'Asia - Japan': ['Glassdoor', 'LinkedIn Salary'],
+            'Asia - Other': ['Glassdoor', 'LinkedIn Salary', 'Indeed Salaries'],
+            'Australia/New Zealand': ['Glassdoor', 'SEEK', 'LinkedIn Salary'],
+            'South America': ['Glassdoor', 'LinkedIn Salary'],
+            'Middle East': ['Glassdoor', 'Bayt', 'LinkedIn Salary'],
+            'Africa': ['Glassdoor', 'LinkedIn Salary']
+        };
+
+        function formatMoney(amount, currencyKey) {
+            const num = Number(amount) || 0;
+            const currency = CURRENCIES[currencyKey] || CURRENCIES.USD;
+            if (!currency.code) {
+                return num.toLocaleString('en-US') + ' ' + '(your currency)';
+            }
+            try {
+                return new Intl.NumberFormat(currency.locale, {
+                    style: 'currency',
+                    currency: currency.code,
+                    maximumFractionDigits: 0
+                }).format(num);
+            } catch (e) {
+                return currency.symbol + ' ' + num.toLocaleString('en-US');
+            }
+        }
+
+        function shortMoney(amount, currencyKey) {
+            const currency = CURRENCIES[currencyKey] || CURRENCIES.USD;
+            const num = Number(amount) || 0;
+            const symbol = currency.symbol || '';
+            if (currency.code === 'JPY') {
+                return symbol + Math.round(num).toLocaleString('en-US');
+            }
+            return symbol + (num / 1000).toFixed(0) + 'K';
+        }
+
+        const STEPS = ['Profile', 'Compensation', 'Skills', 'Review'];
+
+        // Very rough baseline: approx. what a mid-level generalist tech employee
+        // (~4 yrs experience) might earn in this region, in local currency.
+        // Used only to generate a ballpark starting estimate, not real data.
+        const REGION_BASE_MEDIAN = {
+            'North America - United States': 130000,
+            'North America - Canada': 100000,
+            'Europe - UK': 65000,
+            'Europe - Germany': 65000,
+            'Europe - France': 55000,
+            'Europe - Netherlands': 60000,
+            'Europe - Other': 50000,
+            'Asia - India': 1800000,
+            'Asia - Singapore': 90000,
+            'Asia - Japan': 7000000,
+            'Asia - Other': 40000,
+            'Australia/New Zealand': 110000,
+            'South America': 90000,
+            'Middle East': 180000,
+            'Africa': 500000
+        };
+
+        const ROUND_STEP = { USD: 1000, CAD: 1000, GBP: 1000, EUR: 1000, INR: 10000, SGD: 1000, JPY: 50000, AUD: 1000, AED: 5000, ZAR: 5000, BRL: 5000, OTHER: 1000 };
+
+        function experienceFactor(years) {
+            const y = Math.max(0, Math.min(20, Number(years) || 0));
+            // 0 yrs ≈ 0.55x baseline, 4 yrs ≈ 1.0x, 20 yrs ≈ ~2.3x
+            return 0.55 + (y * 0.09);
+        }
+
+        function estimateMarketSalary(region, role, experience, currencyKey) {
+            const base = REGION_BASE_MEDIAN[region];
+            if (!base) return null;
+            const roleMult = ROLE_MULTIPLIERS[role] || 1.0;
+            const expMult = experienceFactor(experience);
+            const raw = base * roleMult * expMult;
+            const step = ROUND_STEP[currencyKey] || 1000;
+            return Math.round(raw / step) * step;
+        }
+
+        function displayRole(formData) {
+            if (formData.role === 'Other (specify below)') {
+                return formData.customRole ? formData.customRole : 'Other';
+            }
+            return formData.role;
+        }
+
+        function Tooltip({ text }) {
+            return (
+                <span className="tooltip-wrap">
+                    <span className="tooltip-icon">?</span>
+                    <span className="tooltip-text">{text}</span>
+                </span>
+            );
+        }
+
+        function formatNumberInput(value) {
+            const digits = value.replace(/[^\d]/g, '');
+            if (!digits) return '';
+            return Number(digits).toLocaleString('en-US');
+        }
+
+        function unformatNumber(value) {
+            const digits = String(value).replace(/[^\d]/g, '');
+            return digits ? parseInt(digits, 10) : '';
+        }
+
+        function ConfirmModal({ title, text, confirmLabel, onConfirm, onCancel }) {
+            return (
+                <div className="modal-overlay" onClick={onCancel}>
+                    <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-icon">⚠️</div>
+                        <div className="modal-title">{title}</div>
+                        <div className="modal-text">{text}</div>
+                        <div className="modal-actions">
+                            <button className="btn-secondary" onClick={onCancel}>Cancel</button>
+                            <button className="btn-danger" onClick={onConfirm}>{confirmLabel}</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function Stepper({ currentStep, furthestStep, onJump }) {
+            return (
+                <div className="stepper">
+                    {STEPS.map((label, idx) => {
+                        const isActive = idx === currentStep;
+                        const isCompleted = idx < currentStep;
+                        const isClickable = idx <= furthestStep;
+                        return (
+                            <div
+                                key={label}
+                                className={`step-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${isClickable ? 'clickable' : ''}`}
+                                onClick={() => isClickable && onJump(idx)}
+                            >
+                                <div className={`step-connector ${idx <= furthestStep ? 'filled' : ''}`}></div>
+                                <div className="step-circle">{isCompleted ? '✓' : idx + 1}</div>
+                                <div className="step-label">{label}</div>
+                            </div>
+                        );
+                    })}
+                </div>
+            );
+        }
+
+        function InputForm({ onSubmit }) {
+            const [formData, setFormData] = useState({
+                role: '', customRole: '', experience: '', currentSalary: '', marketSalary: '',
+                lastHikeMonths: '', neverReceivedHike: false, region: '', currency: '', skills: []
+            });
+            const [step, setStep] = useState(0);
+            const [furthestStep, setFurthestStep] = useState(0);
+            const [errors, setErrors] = useState({});
+            const [touched, setTouched] = useState({});
+            const [skillSearch, setSkillSearch] = useState('');
+            const [showClearModal, setShowClearModal] = useState(false);
+            const [shake, setShake] = useState(false);
+            const [toast, setToast] = useState('');
+            const [currencyTouched, setCurrencyTouched] = useState(false);
+            const [showMarketHelp, setShowMarketHelp] = useState(false);
+            const [showExactInput, setShowExactInput] = useState(false);
+            const [openCategories, setOpenCategories] = useState(new Set());
+            const categoriesManuallySet = useRef(false);
+            const topRef = useRef(null);
+
+            // Suggest a starting category to open based on the person's role,
+            // so the skills list doesn't dump 90+ items on them at once.
+            // Re-evaluates any time the role changes (fixes it staying stuck
+            // on a previously selected role's category).
+            const suggestedCategory = useMemo(() => {
+                const roleText = formData.role === 'Other (specify below)' ? formData.customRole : formData.role;
+                const r = (roleText || '').toLowerCase();
+                const has = (...words) => words.some(w => r.includes(w));
+
+                if (has('data', 'scientist', 'machine learning', 'mlops', 'ai engineer', 'ai research', 'statistician', 'quantitative')) return 'Data & AI';
+                if (has('design', 'ux', 'ui ')) return 'Design & Creative';
+                if (has('market', 'seo', 'brand', 'content')) return 'Marketing & Content';
+                if (has('security')) return 'Security';
+                if (has('frontend', 'front-end')) return 'Frontend & Web';
+                if (has('backend', 'back-end', 'full stack')) return 'Backend & Architecture';
+                if (has('mobile', 'ios', 'android')) return 'Mobile Development';
+                if (has('devops', 'cloud', 'site reliability', 'sre')) return 'Cloud & DevOps';
+                if (has('product', 'project', 'program', 'agile', 'scrum', 'operations', 'hr manager',
+                        'recruiter', 'talent', 'customer', 'support', 'sales', 'account', 'finance',
+                        'financial', 'accountant', 'invest', 'ceo', 'coo', 'cfo', 'cto', 'chief',
+                        'vp ', 'director', 'head of', 'general manager', 'founder', 'manager', 'analyst')) {
+                    return 'Business & Management';
+                }
+                return 'Programming Languages';
+            }, [formData.role, formData.customRole]);
+
+            // Keep the open category in sync with the role, unless the person
+            // has already manually opened/closed categories themselves.
+            useEffect(() => {
+                if (!categoriesManuallySet.current) {
+                    setOpenCategories(new Set([suggestedCategory]));
+                }
+            }, [suggestedCategory]);
+
+            const toggleCategory = (cat) => {
+                categoriesManuallySet.current = true;
+                setOpenCategories(prev => {
+                    const next = new Set(prev);
+                    if (next.has(cat)) next.delete(cat); else next.add(cat);
+                    return next;
+                });
+            };
+
+            const estimatedMarketSalary = useMemo(() => {
+                if (!formData.region || !formData.role || formData.experience === '') return null;
+                return estimateMarketSalary(formData.region, formData.role, formData.experience, formData.currency || 'USD');
+            }, [formData.region, formData.role, formData.experience, formData.currency]);
+
+            // Auto-fill the market salary field with our estimate the moment we
+            // can compute one, so the person never has to research or click
+            // anything; they only need to drag the slider if they disagree.
+            useEffect(() => {
+                if (formData.marketSalary === '' && estimatedMarketSalary !== null) {
+                    setFormData(prev => (prev.marketSalary === '' ? { ...prev, marketSalary: estimatedMarketSalary } : prev));
+                }
+            }, [estimatedMarketSalary]);
+
+            const sliderBounds = useMemo(() => {
+                const step = ROUND_STEP[formData.currency] || 1000;
+                const base = estimatedMarketSalary || (Number(formData.marketSalary) || step * 10);
+                const min = Math.max(step, Math.round((base * 0.5) / step) * step);
+                const max = Math.round((base * 1.8) / step) * step;
+                return { min, max, step };
+            }, [estimatedMarketSalary, formData.currency]);
+
+            const sliderValue = formData.marketSalary === '' ? sliderBounds.min : Number(formData.marketSalary);
+
+            const handleSliderChange = (e) => {
+                const val = Number(e.target.value);
+                setFormData(prev => ({ ...prev, marketSalary: val }));
+                setTouched(prev => ({ ...prev, marketSalary: true }));
+            };
+
+            // Auto-select a sensible currency when region changes, unless the
+            // person has manually picked a different one themselves.
+            useEffect(() => {
+                if (formData.region && !currencyTouched) {
+                    const suggested = REGION_TO_CURRENCY[formData.region] || 'OTHER';
+                    setFormData(prev => ({ ...prev, currency: suggested }));
+                }
+            }, [formData.region]);
+
+            useEffect(() => {
+                if (topRef.current) {
+                    topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, [step]);
+
+            useEffect(() => {
+                if (toast) {
+                    const t = setTimeout(() => setToast(''), 2200);
+                    return () => clearTimeout(t);
+                }
+            }, [toast]);
+
+            const handleChange = (e) => {
+                const { name, value, type, checked } = e.target;
+                setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+                setTouched(prev => ({ ...prev, [name]: true }));
+            };
+
+            const handleNumberChange = (name) => (e) => {
+                const raw = unformatNumber(e.target.value);
+                setFormData(prev => ({ ...prev, [name]: raw }));
+                setTouched(prev => ({ ...prev, [name]: true }));
+            };
+
+            const handleSkillToggle = (skill) => {
+                setFormData(prev => ({
+                    ...prev,
+                    skills: prev.skills.includes(skill)
+                        ? prev.skills.filter(s => s !== skill)
+                        : [...prev.skills, skill]
+                }));
+            };
+
+            const rolePopularSkills = useMemo(() => {
+                if (formData.role === 'Other (specify below)' || !formData.role) {
+                    // No exact role match available - fall back to keyword-matched category.
+                    return getPopularSkillsFor(suggestedCategory);
+                }
+                const group = ROLE_TO_GROUP[formData.role];
+                return getRoleSpecificSkills(formData.role, group);
+            }, [formData.role, suggestedCategory]);
+
+            const addPopularSkills = () => {
+                setFormData(prev => ({
+                    ...prev,
+                    skills: Array.from(new Set([...prev.skills, ...rolePopularSkills]))
+                }));
+                setToast('Added popular skills for your role ✓');
+            };
+
+            const clearSkills = () => {
+                setFormData(prev => ({ ...prev, skills: [] }));
+            };
+
+            const handleClearAll = () => {
+                setFormData({
+                    role: '', customRole: '', experience: '', currentSalary: '', marketSalary: '',
+                    lastHikeMonths: '', neverReceivedHike: false, region: '', currency: '', skills: []
+                });
+                setErrors({});
+                setTouched({});
+                setStep(0);
+                setFurthestStep(0);
+                setCurrencyTouched(false);
+                setShowClearModal(false);
+                setToast('All data cleared');
+            };
+
+            const handleCurrencyChange = (e) => {
+                setCurrencyTouched(true);
+                setFormData(prev => ({ ...prev, currency: e.target.value }));
+            };
+
+            const validateStep = (stepIdx) => {
+                const newErrors = {};
+                if (stepIdx === 0) {
+                    if (!formData.role) newErrors.role = 'Please select your role';
+                    if (formData.role === 'Other (specify below)' && !formData.customRole.trim()) {
+                        newErrors.customRole = 'Please type your job title';
+                    }
+                    if (!formData.experience && formData.experience !== 0) newErrors.experience = 'Enter your years of experience';
+                    else if (formData.experience < 0 || formData.experience > 60) newErrors.experience = 'Enter a value between 0 and 60';
+                    if (!formData.region) newErrors.region = 'Please select your region';
+                }
+                if (stepIdx === 1) {
+                    if (!formData.currentSalary) newErrors.currentSalary = 'Enter your current salary';
+                    if (!formData.marketSalary) newErrors.marketSalary = 'Enter the market average salary';
+                    if (!formData.neverReceivedHike && !formData.lastHikeMonths) {
+                        newErrors.lastHikeMonths = 'Enter months since last raise, or check the box below';
+                    }
+                }
+                return newErrors;
+            };
+
+            const goNext = () => {
+                const stepErrors = validateStep(step);
+                if (Object.keys(stepErrors).length > 0) {
+                    setErrors(stepErrors);
+                    setTouched(prev => {
+                        const next = { ...prev };
+                        Object.keys(stepErrors).forEach(k => next[k] = true);
+                        return next;
+                    });
+                    setShake(true);
+                    setTimeout(() => setShake(false), 300);
+                    return;
+                }
+                setErrors({});
+                const nextStep = Math.min(step + 1, STEPS.length - 1);
+                setStep(nextStep);
+                setFurthestStep(prev => Math.max(prev, nextStep));
+            };
+
+            const goBack = () => {
+                setStep(prev => Math.max(0, prev - 1));
+            };
+
+            const jumpToStep = (idx) => {
+                if (idx <= furthestStep) setStep(idx);
+            };
+
+            const handleFinalSubmit = () => {
+                const step0Errors = validateStep(0);
+                const step1Errors = validateStep(1);
+                const allErrors = { ...step0Errors, ...step1Errors };
+                if (Object.keys(allErrors).length > 0) {
+                    setErrors(allErrors);
+                    setStep(Object.keys(step0Errors).length > 0 ? 0 : 1);
+                    return;
+                }
+                onSubmit(formData);
+            };
+
+            const filteredCategories = useMemo(() => {
+                const query = skillSearch.trim().toLowerCase();
+                const result = {};
+                Object.entries(SKILL_CATEGORIES).forEach(([cat, skills]) => {
+                    const matched = query
+                        ? skills.filter(s => s.toLowerCase().includes(query))
+                        : skills;
+                    if (matched.length > 0) result[cat] = matched;
+                });
+                return result;
+            }, [skillSearch]);
+
+            const showError = (field) => touched[field] && errors[field];
+
+            return (
+                <div ref={topRef}>
+                    <Stepper currentStep={step} furthestStep={furthestStep} onJump={jumpToStep} />
+
+                    {step === 0 && (
+                        <div className={`card ${shake ? 'shake' : ''}`}>
+                            <h2 className="card-title">Your Profile</h2>
+                            <p className="card-subtitle">Let's start with the basics. This takes about 30 seconds.</p>
+
+                            <div className="form-grid">
+                                <div className="form-group">
+                                    <label>Role <span className="required-dot">*</span></label>
+                                    <select
+                                        name="role"
+                                        value={formData.role}
+                                        onChange={handleChange}
+                                        className={showError('role') ? 'input-error' : ''}
+                                    >
+                                        <option value="">Select your role</option>
+                                        {Object.entries(ROLE_GROUPS).map(([group, roles]) => (
+                                            <optgroup label={group} key={group}>
+                                                {roles.map(role => <option key={role} value={role}>{role}</option>)}
+                                            </optgroup>
+                                        ))}
+                                    </select>
+                                    <div className="field-helper">Pick the closest match. The exact title doesn't need to match perfectly.</div>
+                                    {showError('role') && <div className="field-error">⚠ {errors.role}</div>}
+
+                                    {formData.role === 'Other (specify below)' && (
+                                        <div style={{marginTop: '0.75rem'}}>
+                                            <input
+                                                type="text"
+                                                name="customRole"
+                                                value={formData.customRole}
+                                                onChange={handleChange}
+                                                placeholder="Type your exact job title"
+                                                className={showError('customRole') ? 'input-error' : ''}
+                                            />
+                                            {showError('customRole') && <div className="field-error">⚠ {errors.customRole}</div>}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Years of Experience <span className="required-dot">*</span></label>
+                                    <input
+                                        type="number"
+                                        name="experience"
+                                        value={formData.experience}
+                                        onChange={handleChange}
+                                        placeholder="e.g., 5"
+                                        min="0"
+                                        max="60"
+                                        className={showError('experience') ? 'input-error' : ''}
+                                    />
+                                    {showError('experience') && <div className="field-error">⚠ {errors.experience}</div>}
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Region <span className="required-dot">*</span></label>
+                                    <select
+                                        name="region"
+                                        value={formData.region}
+                                        onChange={handleChange}
+                                        className={showError('region') ? 'input-error' : ''}
+                                    >
+                                        <option value="">Select your region</option>
+                                        {REGIONS.map(region => <option key={region} value={region}>{region}</option>)}
+                                    </select>
+                                    {showError('region') && <div className="field-error">⚠ {errors.region}</div>}
+                                </div>
+                            </div>
+
+                            <div className="wizard-nav">
+                                <button type="button" className="btn-text-danger" onClick={() => setShowClearModal(true)}>
+                                    🗑️ Clear all data
+                                </button>
+                                <div className="wizard-nav-right">
+                                    <button type="button" className="btn-primary" onClick={goNext}>
+                                        Continue →
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 1 && (
+                        <div className={`card ${shake ? 'shake' : ''}`}>
+                            <h2 className="card-title">Compensation Details</h2>
+                            <p className="card-subtitle">This is the core data that powers your readiness score.</p>
+
+                            <div className="form-grid" style={{marginBottom: '1.5rem'}}>
+                                <div className="form-group">
+                                    <label>Currency</label>
+                                    <select value={formData.currency} onChange={handleCurrencyChange}>
+                                        {Object.values(CURRENCIES).map(c => (
+                                            <option key={c.label} value={c.code || 'OTHER'}>{c.label}</option>
+                                        ))}
+                                    </select>
+                                    <div className="field-helper">We never convert this, it just formats numbers in your currency.</div>
+                                </div>
+                            </div>
+
+                            <div className="form-grid">
+                                <div className="form-group">
+                                    <label>Current Annual Salary <span className="required-dot">*</span></label>
+                                    <div className="input-prefix-wrap">
+                                        <span className="input-prefix">{CURRENCIES[formData.currency || 'USD'].symbol}</span>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={formatNumberInput(String(formData.currentSalary))}
+                                            onChange={handleNumberChange('currentSalary')}
+                                            placeholder="Enter your salary in numbers, e.g. 85000"
+                                            className={showError('currentSalary') ? 'input-error' : ''}
+                                        />
+                                    </div>
+                                    <div className="field-helper">Numbers only — your base pay per year, no bonus, equity, or benefits (e.g. 85000).</div>
+                                    {showError('currentSalary') && <div className="field-error">⚠ {errors.currentSalary}</div>}
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Market Average Salary <span className="required-dot">*</span></label>
+
+                                    {estimatedMarketSalary !== null ? (
+                                        <React.Fragment>
+                                            <div className="market-slider-value">
+                                                {formatMoney(sliderValue, formData.currency)}
+                                            </div>
+                                            <input
+                                                type="range"
+                                                className="market-slider"
+                                                min={sliderBounds.min}
+                                                max={sliderBounds.max}
+                                                step={sliderBounds.step}
+                                                value={sliderValue}
+                                                onChange={handleSliderChange}
+                                            />
+                                            <div className="market-slider-scale">
+                                                <span>Lower</span>
+                                                <span>Our estimate for {displayRole(formData) || 'your role'}</span>
+                                                <span>Higher</span>
+                                            </div>
+                                            <div className="field-helper">
+                                                We've pre-filled this using a rough estimate for your role, experience, and region. Just drag to adjust if it feels too low or too high, no research needed.
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className="market-help-link"
+                                                onClick={() => setShowExactInput(!showExactInput)}
+                                            >
+                                                {showExactInput ? '▲ Hide' : '❓ I\'d rather type an exact number'}
+                                            </button>
+                                            {showExactInput && (
+                                                <div className="input-prefix-wrap" style={{marginTop: '0.6rem'}}>
+                                                    <span className="input-prefix">{CURRENCIES[formData.currency || 'USD'].symbol}</span>
+                                                    <input
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        value={formatNumberInput(String(formData.marketSalary))}
+                                                        onChange={handleNumberChange('marketSalary')}
+                                                        placeholder="95,000"
+                                                        className={showError('marketSalary') ? 'input-error' : ''}
+                                                    />
+                                                </div>
+                                            )}
+                                        </React.Fragment>
+                                    ) : (
+                                        <div className="input-prefix-wrap">
+                                            <span className="input-prefix">{CURRENCIES[formData.currency || 'USD'].symbol}</span>
+                                            <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                value={formatNumberInput(String(formData.marketSalary))}
+                                                onChange={handleNumberChange('marketSalary')}
+                                                placeholder="95,000"
+                                                className={showError('marketSalary') ? 'input-error' : ''}
+                                            />
+                                        </div>
+                                    )}
+                                    {showError('marketSalary') && <div className="field-error">⚠ {errors.marketSalary}</div>}
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Number of Months Since Your Last Raise {!formData.neverReceivedHike && <span className="required-dot">*</span>}</label>
+                                    <div className="input-prefix-wrap">
+                                        <input
+                                            type="number"
+                                            name="lastHikeMonths"
+                                            value={formData.lastHikeMonths}
+                                            onChange={handleChange}
+                                            placeholder="e.g., 18"
+                                            min="0"
+                                            max="240"
+                                            disabled={formData.neverReceivedHike}
+                                            className={showError('lastHikeMonths') ? 'input-error' : ''}
+                                        />
+                                        <span className="input-suffix">months</span>
+                                    </div>
+                                    <div className="field-helper">
+                                        Enter the number of months in whole numbers, not years (e.g., if it's been 1.5 years, enter 18; if it's been 2 years, enter 24).
+                                    </div>
+                                    {showError('lastHikeMonths') && <div className="field-error">⚠ {errors.lastHikeMonths}</div>}
+                                    <div className="checkbox-container">
+                                        <input
+                                            type="checkbox"
+                                            id="neverReceivedHike"
+                                            name="neverReceivedHike"
+                                            checked={formData.neverReceivedHike}
+                                            onChange={handleChange}
+                                        />
+                                        <label htmlFor="neverReceivedHike" className="checkbox-label">
+                                            I've never received a raise
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {showMarketHelp && (
+                                <div className="market-help-panel">
+                                    <div className="market-help-title">📍 Quick tip for {formData.region || 'your region'}</div>
+                                    <div className="market-help-short">
+                                        Search "<strong>{displayRole(formData) || 'your role'} salary</strong>" on one of these, and use the middle value you find:
+                                    </div>
+                                    <div className="market-help-chips">
+                                        {(MARKET_RESOURCES[formData.region] || MARKET_RESOURCES['North America - United States']).map(src => (
+                                            <span key={src} className="market-source-chip">{src}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="wizard-nav">
+                                <button type="button" className="btn-secondary" onClick={goBack}>← Back</button>
+                                <div className="wizard-nav-right">
+                                    <button type="button" className="btn-primary" onClick={goNext}>Continue →</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 2 && (
+                        <div className="card">
+                            <h2 className="card-title">Your Skills</h2>
+                            <p className="card-subtitle">Optional, but more skills strengthen your negotiation profile.</p>
+
+                            <div className={`skills-count-banner ${formData.skills.length >= 5 ? 'good' : ''}`}>
+                                <span className="skills-count-text">
+                                    {formData.skills.length === 0
+                                        ? "No skills selected yet. Try adding a few below."
+                                        : formData.skills.length < 5
+                                        ? `${formData.skills.length} skill${formData.skills.length === 1 ? '' : 's'} selected. Add a few more for a stronger profile.`
+                                        : `Nice! ${formData.skills.length} skills selected.`}
+                                </span>
+                                {formData.skills.length > 0 && (
+                                    <button type="button" className="btn-text-danger" onClick={clearSkills}>Clear skills</button>
+                                )}
+                            </div>
+
+                            <div className="skills-toolbar">
+                                <div className="search-wrap">
+                                    <span className="search-icon">🔍</span>
+                                    <input
+                                        type="text"
+                                        placeholder="Search skills (e.g., Python, AWS, Design)..."
+                                        value={skillSearch}
+                                        onChange={(e) => setSkillSearch(e.target.value)}
+                                    />
+                                </div>
+                                <button type="button" className="chip-btn" onClick={addPopularSkills}>
+                                    ⭐ Add popular skills for {displayRole(formData) || 'your role'}
+                                </button>
+                            </div>
+
+                            {Object.keys(filteredCategories).length === 0 ? (
+                                <div className="no-results">No skills match "{skillSearch}". Try a different search.</div>
+                            ) : (
+                                Object.entries(filteredCategories).map(([category, skills]) => {
+                                    const isOpen = skillSearch.trim() !== '' || (openCategories && openCategories.has(category));
+                                    const selectedCount = skills.filter(s => formData.skills.includes(s)).length;
+                                    return (
+                                        <div className="skill-category" key={category}>
+                                            <button
+                                                type="button"
+                                                className="skill-category-header"
+                                                onClick={() => toggleCategory(category)}
+                                            >
+                                                <span className="skill-category-title-row">
+                                                    {category}
+                                                    {selectedCount > 0 && <span className="skill-category-count">{selectedCount}</span>}
+                                                </span>
+                                                <span className={`skill-category-chevron ${isOpen ? 'open' : ''}`}>▾</span>
+                                            </button>
+                                            {isOpen && (
+                                                <div className="skills-grid">
+                                                    {skills.map(skill => {
+                                                        const selected = formData.skills.includes(skill);
+                                                        return (
+                                                            <label
+                                                                key={skill}
+                                                                className={`skill-item ${selected ? 'selected' : ''}`}
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selected}
+                                                                    onChange={() => handleSkillToggle(skill)}
+                                                                />
+                                                                <span>{skill}</span>
+                                                            </label>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            )}
+
+                            <div className="wizard-nav">
+                                <button type="button" className="btn-secondary" onClick={goBack}>← Back</button>
+                                <div className="wizard-nav-right">
+                                    <button type="button" className="btn-primary" onClick={goNext}>Continue →</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 3 && (
+                        <div className="card">
+                            <h2 className="card-title">Review Your Details</h2>
+                            <p className="card-subtitle">Double-check everything looks right before we calculate your score.</p>
+
+                            <div className="review-section">
+                                <div className="review-section-header">
+                                    <span className="review-section-title">Profile</span>
+                                    <button type="button" className="review-edit-link" onClick={() => jumpToStep(0)}>Edit</button>
+                                </div>
+                                <div className="review-grid">
+                                    <div>
+                                        <div className="review-item-label">Role</div>
+                                        <div className="review-item-value">{displayRole(formData) || '—'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="review-item-label">Experience</div>
+                                        <div className="review-item-value">{formData.experience} years</div>
+                                    </div>
+                                    <div>
+                                        <div className="review-item-label">Region</div>
+                                        <div className="review-item-value">{formData.region || '—'}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="review-section">
+                                <div className="review-section-header">
+                                    <span className="review-section-title">Compensation</span>
+                                    <button type="button" className="review-edit-link" onClick={() => jumpToStep(1)}>Edit</button>
+                                </div>
+                                <div className="review-grid">
+                                    <div>
+                                        <div className="review-item-label">Current Salary</div>
+                                        <div className="review-item-value">{formatMoney(formData.currentSalary, formData.currency)}</div>
+                                    </div>
+                                    <div>
+                                        <div className="review-item-label">Market Average</div>
+                                        <div className="review-item-value">{formatMoney(formData.marketSalary, formData.currency)}</div>
+                                    </div>
+                                    <div>
+                                        <div className="review-item-label">Last Raise</div>
+                                        <div className="review-item-value">
+                                            {formData.neverReceivedHike ? 'Never received one' : `${formData.lastHikeMonths} months ago`}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="review-section">
+                                <div className="review-section-header">
+                                    <span className="review-section-title">Skills ({formData.skills.length})</span>
+                                    <button type="button" className="review-edit-link" onClick={() => jumpToStep(2)}>Edit</button>
+                                </div>
+                                {formData.skills.length === 0 ? (
+                                    <div className="empty-note">No skills selected. You can still calculate, but adding skills strengthens your score.</div>
+                                ) : (
+                                    <div className="review-skills-list">
+                                        {formData.skills.map(skill => (
+                                            <span className="review-skill-tag" key={skill}>{skill}</span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="wizard-nav" style={{marginTop: '1.5rem'}}>
+                                <button type="button" className="btn-secondary" onClick={goBack}>← Back</button>
+                                <div className="wizard-nav-right">
+                                    <button type="button" className="btn-text-danger" onClick={() => setShowClearModal(true)}>
+                                        🗑️ Start over
+                                    </button>
+                                    <button type="button" className="btn-primary" onClick={handleFinalSubmit}>
+                                        Calculate My Raise Readiness →
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showClearModal && (
+                        <ConfirmModal
+                            title="Clear all data?"
+                            text="This will erase everything you've entered: your profile, compensation details, and selected skills. This can't be undone."
+                            confirmLabel="Yes, clear it"
+                            onConfirm={handleClearAll}
+                            onCancel={() => setShowClearModal(false)}
+                        />
+                    )}
+
+                    {toast && <div className="toast">✓ {toast}</div>}
+                </div>
+            );
+        }
+
+        function calculateResults(formData) {
+            const currentSalary = Number(formData.currentSalary);
+            const marketSalary = Number(formData.marketSalary);
+            const salaryDiff = ((marketSalary - currentSalary) / currentSalary) * 100;
+            const monthsSinceHike = formData.neverReceivedHike ? 999 : parseInt(formData.lastHikeMonths);
+
+            let status = 'fair';
+            if (salaryDiff > 10) status = 'underpaid';
+            else if (salaryDiff < -10) status = 'overpaid';
+
+            const timePoints = formData.neverReceivedHike
+                ? 40
+                : Math.min(40, Math.floor(monthsSinceHike / 3) * 5);
+
+            const salaryPoints = Math.min(35, Math.max(0, Math.floor(salaryDiff / 2) + 15));
+            const skillPoints = Math.min(25, formData.skills.length * 0.5);
+
+            const score = Math.round(timePoints + salaryPoints + skillPoints);
+
+            let baseHike = 5;
+            if (formData.neverReceivedHike) baseHike = 15;
+            else if (monthsSinceHike >= 24) baseHike = 12;
+            else if (monthsSinceHike >= 18) baseHike = 10;
+            else if (monthsSinceHike >= 12) baseHike = 8;
+
+            if (salaryDiff > 15) baseHike += 8;
+            else if (salaryDiff > 10) baseHike += 5;
+            else if (salaryDiff > 5) baseHike += 3;
+
+            if (formData.skills.length >= 10) baseHike += 3;
+            else if (formData.skills.length >= 5) baseHike += 2;
+
+            const safeHike = Math.max(3, Math.floor(baseHike * 0.7));
+            const idealHike = baseHike;
+            const aggressiveHike = Math.floor(baseHike * 1.4);
+
+            return {
+                score,
+                scoreBreakdown: { timePoints, salaryPoints, skillPoints },
+                status,
+                salaryDiff,
+                monthsSinceHike,
+                neverReceivedHike: formData.neverReceivedHike,
+                hikeOptions: {
+                    safe: { percent: safeHike, amount: Math.round(currentSalary * (safeHike / 100)) },
+                    ideal: { percent: idealHike, amount: Math.round(currentSalary * (idealHike / 100)) },
+                    aggressive: { percent: aggressiveHike, amount: Math.round(currentSalary * (aggressiveHike / 100)) }
+                }
+            };
+        }
+
+        const HISTORY_KEY = 'raisecheck_history_v1';
+
+        function loadHistory() {
+            try {
+                const raw = localStorage.getItem(HISTORY_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveHistoryEntry(formData, results) {
+            try {
+                const history = loadHistory();
+                const entry = {
+                    date: new Date().toISOString(),
+                    role: displayRole(formData) || 'My role',
+                    score: results.score,
+                    salary: Number(formData.currentSalary),
+                    gap: results.salaryDiff
+                };
+                const updated = [...history, entry].slice(-6);
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+                return updated;
+            } catch (e) {
+                return loadHistory();
+            }
+        }
+
+        function CareerMapCard({ formData }) {
+            const role = formData.role;
+            if (!role || role === 'Other (specify below)') {
+                return null;
+            }
+            const path = getCareerPath(role);
+            if (!path) return null;
+
+            const group = path.group;
+            const skillsForNext = GROUP_POPULAR_SKILLS[group] || [];
+            const skillsToBuild = skillsForNext.filter(s => !formData.skills.includes(s)).slice(0, 4);
+
+            return (
+                <div className="card">
+                    <h2 className="card-title">Career Map</h2>
+                    <p className="card-subtitle">Where {role} can lead next on the {group} track.</p>
+
+                    <div className="career-path">
+                        {path.track.map((r, i) => {
+                            const isCurrent = i === path.currentIndex;
+                            const isNext = i > path.currentIndex && i <= path.currentIndex + 2;
+                            const isPast = i < path.currentIndex;
+                            return (
+                                <div
+                                    key={r}
+                                    className={`career-step ${isCurrent ? 'current' : ''} ${isNext ? 'next' : ''} ${isPast ? 'past' : ''}`}
+                                >
+                                    {r}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {path.isTopOfTrack ? (
+                        <p style={{color: 'var(--text-secondary)', marginTop: '1rem'}}>
+                            You're at the top of this track. From here, growth usually means broader scope (bigger team, budget, or company) rather than a new title.
+                        </p>
+                    ) : (
+                        <React.Fragment>
+                            <p style={{color: 'var(--text-secondary)', marginTop: '1rem'}}>
+                                A common next step from {role} is <strong>{path.next[0]}</strong>
+                                {path.next[1] ? <React.Fragment>, and later <strong>{path.next[1]}</strong></React.Fragment> : null}.
+                            </p>
+                            {skillsToBuild.length > 0 && (
+                                <div style={{marginTop: '0.75rem'}}>
+                                    <div className="score-explainer-title" style={{marginBottom: '0.5rem'}}>Skills that help you get there</div>
+                                    <div className="career-skill-chips">
+                                        {skillsToBuild.map(s => <span key={s} className="career-skill-chip">{s}</span>)}
+                                    </div>
+                                </div>
+                            )}
+                        </React.Fragment>
+                    )}
+                </div>
+            );
+        }
+
+        function Dashboard({ formData, results, onBack }) {
+            const [showShareModal, setShowShareModal] = useState(false);
+            const [copySuccess, setCopySuccess] = useState(false);
+            const [animatedScore, setAnimatedScore] = useState(0);
+            const [history, setHistory] = useState([]);
+            const chartRef = useRef(null);
+
+            useEffect(() => {
+                let start = 0;
+                const end = results.score;
+                if (end === 0) { setAnimatedScore(0); return; }
+                const duration = 900;
+                const stepTime = Math.max(Math.floor(duration / end), 10);
+                const timer = setInterval(() => {
+                    start += 1;
+                    setAnimatedScore(start);
+                    if (start >= end) clearInterval(timer);
+                }, stepTime);
+                return () => clearInterval(timer);
+            }, [results.score]);
+
+            // Save this check to a lightweight local history so returning
+            // users can see how their situation has moved over time, and
+            // celebrate with confetti when the case for a raise is strong.
+            useEffect(() => {
+                const updated = saveHistoryEntry(formData, results);
+                setHistory(updated);
+
+                if (results.score >= 60 && typeof confetti === 'function') {
+                    const colors = ['#0ea5e9', '#8b5cf6', '#10b981'];
+                    confetti({ particleCount: 90, spread: 75, origin: { y: 0.3 }, colors, startVelocity: 35, ticks: 200 });
+                    setTimeout(() => confetti({ particleCount: 50, spread: 100, origin: { y: 0.2 }, colors }), 250);
+                }
+            }, []);
+
+            useEffect(() => {
+                if (chartRef.current) {
+                    const ctx = chartRef.current.getContext('2d');
+                    const chart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: ['Current', 'Conservative', 'Recommended', 'Ambitious'],
+                            datasets: [{
+                                label: 'Salary (USD)',
+                                data: [
+                                    Number(formData.currentSalary),
+                                    Number(formData.currentSalary) + results.hikeOptions.safe.amount,
+                                    Number(formData.currentSalary) + results.hikeOptions.ideal.amount,
+                                    Number(formData.currentSalary) + results.hikeOptions.aggressive.amount
+                                ],
+                                borderColor: '#0ea5e9',
+                                backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 6,
+                                pointHoverRadius: 8,
+                                pointBackgroundColor: '#0ea5e9'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: '#1e293b',
+                                    titleColor: '#f1f5f9',
+                                    bodyColor: '#f1f5f9',
+                                    borderColor: '#0ea5e9',
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    displayColors: false,
+                                    callbacks: {
+                                        label: function(context) { return formatMoney(context.parsed.y, formData.currency); }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: false,
+                                    ticks: { color: '#64748b', callback: function(value) { return shortMoney(value, formData.currency); } },
+                                    grid: { color: '#e2e8f0' }
+                                },
+                                x: { ticks: { color: '#64748b' }, grid: { display: false } }
+                            }
+                        }
+                    });
+                    return () => chart.destroy();
+                }
+            }, [formData, results]);
+
+            const handleShare = () => setShowShareModal(true);
+
+            const handleCopyShare = () => {
+                const shareText = `📊 My Salary Insight (RaiseCheck)
+
+Role: ${displayRole(formData)}
+Experience: ${formData.experience} years
+Region: ${formData.region}
+
+Market Gap: ${results.salaryDiff > 0 ? '+' : ''}${results.salaryDiff.toFixed(0)}%
+Raise Readiness Score: ${results.score}/100
+Status: ${scoreConfig.status}
+
+Recommended Raise: ${results.hikeOptions.ideal.percent}%
+
+Know your worth. Negotiate with confidence.`;
+
+                navigator.clipboard.writeText(shareText).then(() => {
+                    setCopySuccess(true);
+                    setTimeout(() => setCopySuccess(false), 2000);
+                });
+            };
+
+            const formatCurrency = (amount) => formatMoney(amount, formData.currency);
+
+            const scoreConfig = {
+                color: results.score >= 80 ? '#ef4444' : results.score >= 60 ? '#f59e0b' : results.score >= 40 ? '#0ea5e9' : '#10b981',
+                status: results.score >= 80 ? 'Critical - Act Now' : results.score >= 60 ? 'High Priority' : results.score >= 40 ? 'Moderate' : 'Low Priority',
+                description: results.score >= 80 ? 'Your compensation needs immediate attention. Strong case for negotiation.' :
+                            results.score >= 60 ? 'Good timing to discuss compensation. Build your case with data.' :
+                            results.score >= 40 ? 'Consider timing and market conditions before approaching.' :
+                            'Focus on building impact and skills before negotiating.'
+            };
+
+            // A single plain-English sentence explaining what to actually do -
+            // everything else on this page is detail supporting this one line.
+            const plainSummary = (() => {
+                const pct = results.hikeOptions.ideal.percent;
+                const amt = formatCurrency(results.hikeOptions.ideal.amount);
+                if (results.neverReceivedHike) {
+                    return `You've never had a raise, and that alone is a strong reason to ask. A fair opening ask is about ${pct}% (${amt} more per year).`;
+                }
+                if (results.score >= 60) {
+                    return `You look underpaid for your role right now. This is a good time to ask for about ${pct}% (${amt} more per year).`;
+                }
+                if (results.score >= 40) {
+                    return `Your pay is roughly in the ballpark, but it's been a while. A reasonable ask is around ${pct}% (${amt} more per year).`;
+                }
+                return `Your pay already looks close to or above market. It may be worth waiting, or focusing on building your case before you ask.`;
+            })();
+
+            return (
+                <div>
+                    <button onClick={onBack} className="btn-back">← Edit My Inputs</button>
+
+                    <div className="card plain-summary-card">
+                        <div className="plain-summary-label">🎯 In simple terms</div>
+                        <div className="plain-summary-text">{plainSummary}</div>
+                    </div>
+
+                    <div className={`card status-card ${results.status}`}>
+                        <div className={`status-badge ${results.status}`}>
+                            {results.status === 'overpaid' ? '✓ Above Market' :
+                             results.status === 'fair' ? '≈ Market Rate' : '⚠ Below Market'}
+                        </div>
+
+                        <div className="market-comparison">
+                            <div className="comparison-item">
+                                <div className="comparison-label">Your Salary</div>
+                                <div className="comparison-value">{formatCurrency(formData.currentSalary)}</div>
+                            </div>
+                            <div className="comparison-item">
+                                <div className="comparison-label">Market Average</div>
+                                <div className="comparison-value">{formatCurrency(formData.marketSalary)}</div>
+                            </div>
+                            <div className="comparison-item">
+                                <div className="comparison-label">Gap</div>
+                                <div className="comparison-value" style={{
+                                    color: results.salaryDiff > 0 ? 'var(--accent-danger)' :
+                                           results.salaryDiff < 0 ? 'var(--accent-success)' : 'var(--accent-primary)'
+                                }}>
+                                    {results.salaryDiff > 0 ? '+' : ''}{results.salaryDiff.toFixed(1)}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <h2 className="card-title">Raise Readiness Score</h2>
+
+                        <div className="score-container">
+                            <div className="score-circle">
+                                <svg width="180" height="180" style={{transform: 'rotate(-90deg)'}}>
+                                    <circle cx="90" cy="90" r="70" fill="none" stroke="#e2e8f0" strokeWidth="12"/>
+                                    <circle
+                                        cx="90" cy="90" r="70" fill="none"
+                                        stroke={scoreConfig.color} strokeWidth="12"
+                                        strokeDasharray={`${2 * Math.PI * 70}`}
+                                        strokeDashoffset={`${2 * Math.PI * 70 * (1 - animatedScore / 100)}`}
+                                        strokeLinecap="round"
+                                        style={{transition: 'stroke-dashoffset 0.3s ease'}}
+                                    />
+                                </svg>
+                                <div className="score-number" style={{color: scoreConfig.color}}>{animatedScore}</div>
+                            </div>
+
+                            <div className="score-status" style={{color: scoreConfig.color}}>{scoreConfig.status}</div>
+                            <div className="score-description">{scoreConfig.description}</div>
+                        </div>
+
+                        <div className="score-explainer">
+                            <div className="score-explainer-title">Why this score?</div>
+                            <div className="score-breakdown">
+                                <div className="score-item">
+                                    <span className="score-item-label">
+                                        {results.neverReceivedHike ? 'Never received a raise' : 'Time since last raise'}
+                                    </span>
+                                    <span className="score-item-value">+{results.scoreBreakdown.timePoints}</span>
+                                </div>
+                                <div className="score-item">
+                                    <span className="score-item-label">Salary vs market gap</span>
+                                    <span className="score-item-value">+{results.scoreBreakdown.salaryPoints}</span>
+                                </div>
+                                <div className="score-item">
+                                    <span className="score-item-label">Skill strength ({formData.skills.length} skills)</span>
+                                    <span className="score-item-value">+{results.scoreBreakdown.skillPoints}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <CareerMapCard formData={formData} />
+
+                    <div className="card">
+                        <h2 className="card-title">Raise Suggestions</h2>
+
+                        <p style={{color: 'var(--text-secondary)', marginBottom: '1.5rem'}}>
+                            {results.neverReceivedHike
+                                ? "Never receiving a raise puts you in a strong position to negotiate. Document your contributions and request fair compensation."
+                                : results.status === 'underpaid'
+                                ? "Market data indicates strong negotiation leverage. Document your contributions and impact."
+                                : results.monthsSinceHike >= 18
+                                ? "Significant time has passed since your last adjustment. Consider initiating a discussion."
+                                : "Standard compensation adjustment ranges based on your profile and current market conditions."}
+                        </p>
+
+                        <div className="hike-options">
+                            <div className="hike-option">
+                                <div className="hike-label">Conservative</div>
+                                <div className="hike-value" style={{color: 'var(--accent-success)'}}>{results.hikeOptions.safe.percent}%</div>
+                                <div className="hike-amount">+{formatCurrency(results.hikeOptions.safe.amount)}</div>
+                            </div>
+
+                            <div className="hike-option" style={{borderColor: 'var(--accent-primary)'}}>
+                                <div className="hike-label">Recommended</div>
+                                <div className="hike-value" style={{color: 'var(--accent-primary)'}}>{results.hikeOptions.ideal.percent}%</div>
+                                <div className="hike-amount">+{formatCurrency(results.hikeOptions.ideal.amount)}</div>
+                            </div>
+
+                            <div className="hike-option">
+                                <div className="hike-label">Ambitious</div>
+                                <div className="hike-value" style={{color: 'var(--accent-warning)'}}>{results.hikeOptions.aggressive.percent}%</div>
+                                <div className="hike-amount">+{formatCurrency(results.hikeOptions.aggressive.amount)}</div>
+                            </div>
+                        </div>
+
+                        <div className="alert alert-info" style={{marginTop: '1.5rem'}}>
+                            <div>
+                                💡 <strong>Strategy:</strong> A <strong>{results.hikeOptions.ideal.percent}% increase</strong> aligns with your profile and market position. Support your request with quantifiable achievements.
+                            </div>
+                        </div>
+
+                        <button onClick={handleShare} className="btn-share">📤 Share My Salary Insight</button>
+                    </div>
+
+                    <AskForItSection formData={formData} results={results} formatCurrency={formatCurrency} />
+
+                    {history.length > 1 && (
+                        <div className="card">
+                            <h2 className="card-title">Your Progress</h2>
+                            <p className="card-subtitle">Every check is saved on this device so you can see how your case changes over time.</p>
+                            <div className="progress-track">
+                                {history.map((h, idx) => {
+                                    const isLatest = idx === history.length - 1;
+                                    const prev = history[idx - 1];
+                                    const delta = prev ? h.score - prev.score : null;
+                                    return (
+                                        <div key={h.date} className={`progress-node ${isLatest ? 'latest' : ''}`}>
+                                            <div className="progress-node-score">{h.score}</div>
+                                            <div className="progress-node-date">{new Date(h.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
+                                            {delta !== null && delta !== 0 && (
+                                                <div className={`progress-node-delta ${delta > 0 ? 'up' : 'down'}`}>
+                                                    {delta > 0 ? '▲' : '▼'} {Math.abs(delta)}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="card">
+                        <h2 className="card-title">Salary Growth Visual</h2>
+                        <div className="chart-container"><canvas ref={chartRef}></canvas></div>
+                    </div>
+
+                    {showShareModal && (
+                        <div className="share-modal" onClick={() => setShowShareModal(false)}>
+                            <div className="share-card" onClick={(e) => e.stopPropagation()}>
+                                <button className="share-close" onClick={() => setShowShareModal(false)}>×</button>
+                                <h3 style={{marginBottom: '1rem', fontFamily: 'JetBrains Mono'}}>Share Your Insight</h3>
+                                <div className="share-content">
+                                    📊 My Salary Insight (RaiseCheck)
+                                    <br/><br/>
+                                    Role: {displayRole(formData)}<br/>
+                                    Experience: {formData.experience} years<br/>
+                                    Region: {formData.region}
+                                    <br/><br/>
+                                    Market Gap: {results.salaryDiff > 0 ? '+' : ''}{results.salaryDiff.toFixed(0)}%<br/>
+                                    Raise Readiness Score: {results.score}/100<br/>
+                                    Status: {scoreConfig.status}
+                                    <br/><br/>
+                                    Recommended Raise: {results.hikeOptions.ideal.percent}%
+                                    <br/><br/>
+                                    Know your worth. Negotiate with confidence.
+                                </div>
+                                <button onClick={handleCopyShare} className="btn-copy">
+                                    {copySuccess ? '✓ Copied!' : 'Copy to Clipboard'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function buildAskScripts(formData, results, formatCurrency) {
+            const role = displayRole(formData) || 'my role';
+            const pct = results.hikeOptions.ideal.percent;
+            const amt = formatCurrency(results.hikeOptions.ideal.amount);
+            const newTotal = formatCurrency(Number(formData.currentSalary) + results.hikeOptions.ideal.amount);
+            const timeframe = results.neverReceivedHike
+                ? "I've never had a compensation review since joining"
+                : `it's been ${formData.lastHikeMonths} months since my last raise`;
+
+            const callPoints = [
+                `Open by asking for a short 1:1: "Do you have 15 to 20 minutes this week to talk about my compensation?"`,
+                `State the fact plainly: ${timeframe}.`,
+                `Share your research: "Based on what I've found, the market rate for a ${role} is around ${formatCurrency(formData.marketSalary)}."`,
+                `List 2–3 concrete wins from the last few months (projects shipped, targets hit, problems solved).`,
+                `Make a specific ask: "I'd like to request a raise of about ${pct}%, bringing my salary to around ${newTotal}."`,
+                `Ask about process: "What would it take to make this happen, and what's a realistic timeline?"`,
+                `If they can't decide on the spot: "No problem, can we follow up by [date] with next steps?"`
+            ];
+
+            const emailSubject = `Requesting a compensation review`;
+            const emailBody = `Hi [Manager's Name],
+
+I hope you're doing well. I'd like to request some time to discuss my compensation.
+
+${results.neverReceivedHike
+    ? "I haven't had a compensation review since I joined, and"
+    : `It's been ${formData.lastHikeMonths} months since my last raise, and`} based on my research into current market rates for a ${role}, I believe there's a gap between my current pay and the market.
+
+Over the past few months, I've contributed to [mention 1-2 specific achievements, e.g., a project delivered, a metric improved, added responsibilities]. Given this, I'd like to request a raise of around ${pct}%, which would bring my salary to approximately ${newTotal}.
+
+Could we find some time this week or next to discuss this? I'm happy to share more detail on my research and contributions.
+
+Thank you for considering this,
+[Your Name]`;
+
+            const whatsappMessage = `Hi [Manager's name], hope you're doing well! 🙂 Could we grab some time this week to chat about my compensation? ${results.neverReceivedHike ? "I haven't had a review since joining" : `It's been a while since my last raise (${formData.lastHikeMonths} months)`}, and I've done some research on market rates I'd like to walk you through. Let me know what time works for you!`;
+
+            return { callPoints, emailSubject, emailBody, whatsappMessage };
+        }
+
+        function AskForItSection({ formData, results, formatCurrency }) {
+            const [activeTab, setActiveTab] = useState('call');
+            const [copied, setCopied] = useState(false);
+            const scripts = useMemo(() => buildAskScripts(formData, results, formatCurrency), [formData, results]);
+
+            const handleCopy = (text) => {
+                navigator.clipboard.writeText(text).then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                });
+            };
+
+            const tabs = [
+                { id: 'call', label: '📞 Talking Points' },
+                { id: 'email', label: '📧 Email' },
+                { id: 'whatsapp', label: '💬 WhatsApp' }
+            ];
+
+            return (
+                <div className="card">
+                    <h2 className="card-title">How to Ask For It</h2>
+                    <p className="card-subtitle">Ready-to-use scripts for the conversation, email, or a quick message. Edit the [bracketed] parts before sending.</p>
+
+                    <div className="ask-tabs">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                className={`ask-tab ${activeTab === tab.id ? 'active' : ''}`}
+                                onClick={() => setActiveTab(tab.id)}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {activeTab === 'call' && (
+                        <div className="ask-content">
+                            <ol className="ask-call-list">
+                                {scripts.callPoints.map((point, idx) => (
+                                    <li key={idx}>{point}</li>
+                                ))}
+                            </ol>
+                            <button
+                                className="btn-copy-small"
+                                onClick={() => handleCopy(scripts.callPoints.map((p, i) => `${i + 1}. ${p}`).join('\n'))}
+                            >
+                                {copied ? '✓ Copied!' : '📋 Copy talking points'}
+                            </button>
+                        </div>
+                    )}
+
+                    {activeTab === 'email' && (
+                        <div className="ask-content">
+                            <div className="ask-email-subject"><strong>Subject:</strong> {scripts.emailSubject}</div>
+                            <div className="ask-template-box">{scripts.emailBody}</div>
+                            <button
+                                className="btn-copy-small"
+                                onClick={() => handleCopy(`Subject: ${scripts.emailSubject}\n\n${scripts.emailBody}`)}
+                            >
+                                {copied ? '✓ Copied!' : '📋 Copy email'}
+                            </button>
+                        </div>
+                    )}
+
+                    {activeTab === 'whatsapp' && (
+                        <div className="ask-content">
+                            <div className="ask-template-box ask-whatsapp-box">{scripts.whatsappMessage}</div>
+                            <button
+                                className="btn-copy-small"
+                                onClick={() => handleCopy(scripts.whatsappMessage)}
+                            >
+                                {copied ? '✓ Copied!' : '📋 Copy message'}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function App() {
+            const [showDashboard, setShowDashboard] = useState(false);
+            const [formData, setFormData] = useState(null);
+            const [results, setResults] = useState(null);
+
+            const handleSubmit = (data) => {
+                setFormData(data);
+                setResults(calculateResults(data));
+                setShowDashboard(true);
+                window.scrollTo(0, 0);
+            };
+
+            const handleBack = () => {
+                setShowDashboard(false);
+                window.scrollTo(0, 0);
+            };
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <div className="logo">RaiseCheck</div>
+                        <div className="tagline">Find out if you deserve a raise, in about 2 minutes.</div>
+                        <div className="tagline-badge"><span className="pulse-dot"></span>Free, private, no signup</div>
+                    </div>
+
+                    {!showDashboard ? (
+                        <InputForm onSubmit={handleSubmit} />
+                    ) : (
+                        <Dashboard formData={formData} results={results} onBack={handleBack} />
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
